@@ -12,12 +12,14 @@ class TransformerDecoder(nn.Module):
             self,
             arch: Literal['vit_tiny', 'vit_small', 'vit_base'] = 'vit_small',
             transformer_kwargs: dict = {},
+            header: nn.Module | None = None,
     ):
         super().__init__()
         self.transformer = make_transformer(
             arch_name=arch,
             **transformer_kwargs,
         )
+        self.header = header # not used currently
 
     def forward(
         self,

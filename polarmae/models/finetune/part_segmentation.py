@@ -84,6 +84,21 @@ class PartSegmentation(FinetuneModel):
                 "Using decoder, so not aggregating token features (i.e. `seg_head_fetch_layers`) for use in seg head."
             )
 
+        if self.hparams.loss_func == "nll":
+            self.loss_func = nn.NLLLoss(
+                weight=torch.ones(self.hparams.num_classes, device=self.device),
+                reduction="mean",
+                ignore_index=-1,
+            )
+        elif self.hparams.loss_func in ["focal", "fancy"]:
+            self.loss_func = SoftmaxFocalLoss(
+                weight=torch.ones(self.hparams.num_classes, device=self.device),
+                reduction="mean",
+                ignore_index=-1,
+                gamma=2,
+            )
+        else:
+            raise ValueError(f"Unknown loss function: {self.hparams.loss_func}")
 
     def setup(self, stage: Optional[str] = None) -> None:
         super().setup(stage)
@@ -131,12 +146,14 @@ class PartSegmentation(FinetuneModel):
         """                                  losses                                  """
         """ ------------------------------------------------------------------------ """
         # instantiate loss function
-        if self.hparams.loss_func == "nll":
-            self.loss_func = nn.NLLLoss(weight=self.trainer.datamodule.class_weights, reduction='mean', ignore_index=-1)
-        elif self.hparams.loss_func in ["focal", "fancy"]:
-            self.loss_func = SoftmaxFocalLoss(weight=self.trainer.datamodule.class_weights, reduction='mean', ignore_index=-1, gamma=2)
-        else:
-            raise ValueError(f"Unknown loss function: {self.hparams.loss_func}")
+        # if self.hparams.loss_func == "nll":
+        #     self.loss_func = nn.NLLLoss(weight=self.trainer.datamodule.class_weights, reduction='mean', ignore_index=-1)
+        # elif self.hparams.loss_func in ["focal", "fancy"]:
+        #     self.loss_func = SoftmaxFocalLoss(weight=self.trainer.datamodule.class_weights, reduction='mean', ignore_index=-1, gamma=2)
+        # else:
+        #     raise ValueError(f"Unknown loss function: {self.hparams.loss_func}")
+
+        self.loss_func.weight.copy_(self.trainer.datamodule.class_weights)
 
         """ ------------------------------------------------------------------------ """
         """                                  checkpoints                             """

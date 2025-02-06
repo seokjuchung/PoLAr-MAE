@@ -11,7 +11,7 @@ gdown --folder 1nec9WYPRqMn-_3m6TdM12TmpoInHDosb -O /path/to/save/dataset
 
 ## Indexing the Dataset
 
-Before loading the dataset, it's necessary to index the point cloud sizes. This step ensures that only events with a sufficient number of points are used—effectively filtering out sparse events that might otherwise introduce noise or errors into downstream analysis. Run the following command to create an index:
+Before loading the dataset, it's necessary to index the point cloud sizes. This step ensures that only events with a sufficient number of points are used. Run the following command to create an index:
 
 ```bash
 python -m polarmae.datasets.build_index /path/to/dataset/**/*.h5 -j N
@@ -46,6 +46,7 @@ Each HDF5 file contains two main attributes:
 - **`point`:**  
   Each entry corresponds to the number of spacepoints in a single event, containing:
   - 3D point coordinates
+  - Voxel value
   - Energy deposit
   - Absolute time
   - Number of electrons

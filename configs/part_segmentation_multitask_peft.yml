@@ -27,8 +27,7 @@ model:
       voxel_size: 5
       masking_ratio: 0.6
       masking_type: rand
-      tokenizer_kwargs: # override tokenizer kwargs if wanted. 
-        group_radius: ${eval:'${model.encoder.init_args.voxel_size} * ${model.transformation_scale_factor}'} # equivalent to 5 voxel radius in normalized coords
+      tokenizer_kwargs: {} # override tokenizer kwargs if wanted. 
       apply_relative_position_bias: false
       transformer_kwargs:
         postnorm: false

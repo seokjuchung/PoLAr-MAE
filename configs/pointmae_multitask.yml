@@ -30,7 +30,7 @@ model:
       voxel_size: 5
       masking_ratio: 0.6
       masking_type: rand
-      tokenizer_kwargs: # override tokenizer kwargs if wanted. 
+      tokenizer_kwargs: # override tokenizer kwargs if wanted. for example, you can override the group radius from 5 voxels to below:
         group_radius: ${eval:'${model.encoder.init_args.voxel_size} * ${model.transformation_scale_factor}'} # equivalent to 5 voxel radius in normalized coords
       apply_relative_position_bias: false
       transformer_kwargs:
@@ -60,7 +60,7 @@ model:
   lr_scheduler_linear_warmup_start_lr: 8.6e-6
   lr_scheduler_cosine_eta_min: ${.lr_scheduler_linear_warmup_start_lr}
   lr_scheduler_stepping: step # or 'epoch'
-  svm_validation_max_tokens: 1000
+  svm_validation_max_tokens: 15000
   # other
   train_transformations:
   - "center_and_scale"  

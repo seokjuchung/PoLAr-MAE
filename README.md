@@ -28,6 +28,10 @@ MAX_JOBS=N pip install -e .
 # Install C-NMS
 cd ../cnms
 MAX_JOBS=N pip install -e .
+
+# Install polarmae
+cd ../.. # should be in the root directory of the repository now
+pip install -e .
 ```
 
 > [!NOTE]

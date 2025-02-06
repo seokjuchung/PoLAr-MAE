@@ -64,26 +64,46 @@ class TransformerEncoder(nn.Module):
             ids: Optional[torch.Tensor] = None,
             endpoints: Optional[torch.Tensor] = None,
     ) -> Dict[str, torch.Tensor]:
-        x, centers, emb_mask, id_groups, endpoints_groups, groups, point_mask, idx = self.tokenizer(
-            points[...,:self.num_channels], lengths, ids, endpoints, return_point_info=True    
+        out = self.prepare_tokens(points, lengths, ids, endpoints)
+        masked, unmasked = self.masking(out['centers'], out['emb_mask'].sum(-1))
+        out['masked'] = masked
+        out['unmasked'] = unmasked
+        out['masked_sum'] = masked.sum().item()
+        return out
+    
+    def prepare_tokens(
+        self,
+        points: torch.Tensor,
+        lengths: torch.Tensor,
+        ids: Optional[torch.Tensor] = None,
+        endpoints: Optional[torch.Tensor] = None,
+    ) -> Dict[str, torch.Tensor]:
+        x, centers, emb_mask, id_groups, endpoints_groups, groups, point_mask, idx = (
+            self.tokenizer(
+                points[..., : self.num_channels],
+                lengths,
+                ids,
+                endpoints,
+                return_point_info=True,
+            )
         )
-        masked, unmasked = self.masking(centers, emb_mask.sum(-1))
         pos_embed = self.pos_embed(centers)
-        rpb = self.relative_position_bias(centers) if self.relative_position_bias is not None else None
+        rpb = (
+            self.relative_position_bias(centers)
+            if self.relative_position_bias is not None
+            else None
+        )
         out = {
-            'x': x,
-            'centers': centers,
-            'emb_mask': emb_mask,
-            'id_groups': id_groups,
-            'endpoints_groups': endpoints_groups,
-            'groups': groups,
-            'point_mask': point_mask,
-            'masked': masked,
-            'unmasked': unmasked,
-            'pos_embed': pos_embed,
-            'masked_sum': masked.sum().item(),
-            'rpb': rpb,
-            'grouping_idx': idx,
+            "x": x,
+            "centers": centers,
+            "emb_mask": emb_mask,
+            "id_groups": id_groups,
+            "endpoints_groups": endpoints_groups,
+            "groups": groups,
+            "point_mask": point_mask,
+            "pos_embed": pos_embed,
+            "rpb": rpb,
+            "grouping_idx": idx,
         }
         return out
 

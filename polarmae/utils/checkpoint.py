@@ -151,6 +151,13 @@ def load_finetune_checkpoint(
     datamodule_hparams = ckpt["datamodule_hyper_parameters"]
     datamodule_cls_path = datamodule_hparams["_class_path"]
     datamodule_name, class_name = datamodule_cls_path.rsplit(".", 1)
+    
+    # fix for old checkpoints
+    if datamodule_name == 'larnet.datasets':
+        datamodule_name = 'polarmae.datasets'
+    if class_name == 'LArNetDataModule':
+        class_name = 'PILArNetDataModule'
+
     datamodule = importlib.import_module(datamodule_name)
     datamodule_cls = getattr(datamodule, class_name)
 

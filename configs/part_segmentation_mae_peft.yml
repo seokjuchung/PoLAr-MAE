@@ -65,7 +65,7 @@ model:
     - "rotate"
   val_transformations:
     - "center_and_scale"
-  transformation_center: [384, 384, 384] # [768 / 2]*3
+  transformation_center: [384, 384, 384] # [768 / 2]*3. will be subtracted from the point cloud coordinates.
   transformation_scale_factor: ${eval:'1/ (${.transformation_center[0]} * (3**0.5))'}  # 1 / (768 * sqrt(3) / 2)
 data:
   class_path: polarmae.datasets.PILArNetDataModule

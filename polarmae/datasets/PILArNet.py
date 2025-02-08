@@ -24,6 +24,7 @@ class PILArNet(Dataset):
         min_points: int = 1024,
         return_semantic_id: bool = True,
         return_cluster_id: bool = True,
+        return_endpoints: bool = False # not used currently
     ):
         self.data_path = data_path
         self.h5_files = glob(data_path)
@@ -132,7 +133,7 @@ class PILArNet(Dataset):
         return output
 
     def __del__(self):
-        if self.initted:
+        if hasattr(self, 'initted') and self.initted:
             for h5_file in self.h5data:
                 h5_file.close()
 
@@ -176,6 +177,9 @@ class PILArNet(Dataset):
             cluster_id=padded_cluster_id,
         )
         return out
+    
+    def __repr__(self):
+        return f"PILArNet(data_path={self.data_path}, emin={self.emin}, emax={self.emax}, energy_threshold={self.energy_threshold}, remove_low_energy_scatters={self.remove_low_energy_scatters}, min_points={self.min_points}, return_semantic_id={self.return_semantic_id}, return_cluster_id={self.return_cluster_id})"
 
 
 class PILArNetDataModule(pl.LightningDataModule):

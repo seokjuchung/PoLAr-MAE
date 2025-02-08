@@ -465,3 +465,6 @@ class PointcloudGrouping(nn.Module):
             idx=idx, # (B, T, K)
         )
         return out
+
+    def __repr__(self):
+        return f"PointcloudGrouping(\n\tnum_groups={self.num_groups}, group_max_points={self.group_max_points}, group_radius={self.group_radius},\n\toverlap_factor={self.overlap_factor}, reduction_method={self.reduction_method}, use_relative_features={self.use_relative_features},\n\tnormalize_group_centers={self.normalize_group_centers}, rescale_by_group_radius={self.rescale_by_group_radius}\n)"

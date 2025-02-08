@@ -6,7 +6,7 @@ from pytorch_lightning.cli import LightningCLI
 OmegaConf.register_new_resolver("eval", eval)
 
 from polarmae.datasets import PILArNetDataModule
-from polarmae.models.ssl.pointmae import PointMAE
+from polarmae.models.ssl import PointMAE
 
 import pytorch_lightning
 

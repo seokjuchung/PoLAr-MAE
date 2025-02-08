@@ -1,4 +1,3 @@
-import copy
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import pytorch_lightning as pl
@@ -22,7 +21,7 @@ from math import sqrt
 log = RankedLogger(__name__, rank_zero_only=True)
 
 
-class PartSegmentation(FinetuneModel):
+class SemanticSegmentation(FinetuneModel):
     def __init__(
         self,
         encoder: TransformerEncoder,
@@ -31,9 +30,7 @@ class PartSegmentation(FinetuneModel):
         seg_head_fetch_layers: List[int] = [3, 7, 11],
         seg_head_dim: int = 512,
         seg_head_dropout: float = 0.5,
-        apply_local_attention: bool = False,
         condition_global_features: bool = False,
-        use_pos_enc_for_upsampling: bool = False,
         # LR/optimizer
         learning_rate: float = 1e-3,
         optimizer_adamw_weight_decay: float = 0.05,
@@ -52,6 +49,9 @@ class PartSegmentation(FinetuneModel):
         loss_func: Literal["nll", "focal", "fancy"] = "nll",
         # Checkpoints
         pretrained_ckpt_path: Optional[str] = None,
+        # deprecated args used in past training runs
+        use_pos_enc_for_upsampling: bool = False,
+        apply_local_attention: bool = False,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -145,13 +145,6 @@ class PartSegmentation(FinetuneModel):
         """ ------------------------------------------------------------------------ """
         """                                  losses                                  """
         """ ------------------------------------------------------------------------ """
-        # instantiate loss function
-        # if self.hparams.loss_func == "nll":
-        #     self.loss_func = nn.NLLLoss(weight=self.trainer.datamodule.class_weights, reduction='mean', ignore_index=-1)
-        # elif self.hparams.loss_func in ["focal", "fancy"]:
-        #     self.loss_func = SoftmaxFocalLoss(weight=self.trainer.datamodule.class_weights, reduction='mean', ignore_index=-1, gamma=2)
-        # else:
-        #     raise ValueError(f"Unknown loss function: {self.hparams.loss_func}")
 
         self.loss_func.weight.copy_(self.trainer.datamodule.class_weights)
 
@@ -183,7 +176,7 @@ class PartSegmentation(FinetuneModel):
             return_logits: bool = False,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         # run encoder as usual
-        out = self.encoder.prepare_tokens_with_masks(points, lengths, ids=labels)
+        out = self.encoder.prepare_tokens(points, lengths, ids=labels)
         output = self.encoder(
             out["x"],
             out["pos_embed"],
@@ -197,7 +190,7 @@ class PartSegmentation(FinetuneModel):
             token_features = output.last_hidden_state
         else:
             # fetch intermediate layers & get averaged token features
-            token_features = self.encoder.fetch_intermediate_layers(
+            token_features = self.encoder.combine_intermediate_layers(
                 output,
                 out['emb_mask'],
                 self.hparams.seg_head_fetch_layers,

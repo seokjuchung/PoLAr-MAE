@@ -107,7 +107,7 @@ class TransformerEncoder(nn.Module):
         }
         return out
 
-    def fetch_intermediate_layers(
+    def combine_intermediate_layers(
         self,
         output: TransformerOutput,
         mask: Optional[torch.Tensor] = None,

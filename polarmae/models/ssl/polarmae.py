@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
-class PointMAE_Multitask(SSLModel):
+class PoLArMAE(SSLModel):
     def __init__(self,
         encoder: TransformerEncoder,
         decoder: TransformerDecoder,

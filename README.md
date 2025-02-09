@@ -65,6 +65,10 @@ There are a couple of extra dependencies that are optional, but recommended:
 conda install wandb jupyter matplotlib
 ```
 
+## Tutorial Notebooks
+
+Tutorial notebooks for understanding the dataset, model architecture, pretraining, and finetuning are available in the [`tutorial`](tutorial) directory.
+
 ## PILArNet-M Dataset
 
 We use and provide the 156 GB **PILArNet-M** dataset of >1M [LArTPC](https://www.symmetrymagazine.org/article/october-2012/time-projection-chambers-a-milestone-in-particle-detector-technology?language_content_entity=und) events. See [DATASET.md](DATASET.md) for more details, but the dataset is available at this [link](https://drive.google.com/drive/folders/1nec9WYPRqMn-_3m6TdM12TmpoInHDosb?usp=drive_link), or can be downloaded with the following command:
@@ -88,6 +92,16 @@ gdown --folder 1nec9WYPRqMn-_3m6TdM12TmpoInHDosb -O /path/to/save/dataset
 
 Our evaluation consists of training an ensemble of linear SVMs to classify individual tokens (i.e., groups) as containing one or more classes. This is done via a One vs Rest strategy, where each SVM is trained to classify a single class against all others. $F_1$ is the mean $F_1$ score over all semantic categories in the validation set of the PILArNet-M dataset.
 
+After installing the dependencies, you can run the following commands in an interactive Python session to load the pretrained model(s):
+
+```python
+>>> from polarmae.models.ssl import PointMAE, PoLArMAE
+>>> !wget https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/mae_pretrain.ckpt
+>>> !wget https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_pretrain.ckpt
+>>> model = PointMAE.load_from_checkpoint("mae_pretrain.ckpt") # or
+>>> model = PoLArMAE.load_from_checkpoint("polarmae_pretrain.ckpt")
+```
+
 ### Semantic Segmentation
 
 | Model | Training Method | Num. Events |  Config | $F_1$ | Download |
@@ -98,6 +112,20 @@ Our evaluation consists of training an ensemble of linear SVMs to classify indiv
 | PoLAr-MAE | FFT | 10k | [part_segmentation_polarmae_fft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_polarmae_fft.yml) | 0.837 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_fft_segsem_10k.ckpt) |
 
 Our evaluation for semantic segmentation consists of 1:1 comparisons between the predicted and ground truth segmentations. $F_1$ is the mean $F_1$ score over all semantic categories in the validation set of the PILArNet-M dataset.
+
+After installing the dependencies, you can run the following commands in an interactive Python session to load the pretrained model(s):
+
+```python
+>>> from polarmae.models.finetune import SemanticSegmentation
+>>> from polarmae.utils.checkpoint import load_finetune_checkpoint
+>>> !wget https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/{mae,polarmae}_{fft,peft}_segsem.ckpt
+>>> model = load_finetune_checkpoint(SemanticSegmentation, 
+                                    "{mae,polarmae}_{fft,peft}_segsem.ckpt",
+                                    data_path="/path/to/pilarnet-m/dataset",
+                                    pretrained_ckpt_path="{mae,polarmae}_pretrain.ckpt")
+```
+
+Here, the brackets {} denote the model and the training method -- choose one from `{mae,polarmae}` and `{fft,peft}`. Note that you must use the `load_finetune_checkpoint` function to load the model, as it has to do some extra setup not required for the pretraining phase. Knowing the `data_path` is necessary as the number of segmentation classes is determined by the dataset.
 
 ## Training
 

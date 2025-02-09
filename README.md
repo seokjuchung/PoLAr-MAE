@@ -1,12 +1,17 @@
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <h1>PoLAr-MAE</h1>
-    <img src="images/latent_space.png" alt="Latent Space" style="max-height: 100px;" />
+
+<div align="center">
+  <h2>Particle Trajectory Representation Learning with Masked Point Modeling<br>(PoLAr-MAE)</h2>
 </div>
 
-Particle Trajectory Representation Learning with Masked Point Modeling
+<div align="center">
+<a href="https://arxiv.org/abs/2502.02558">[Paper]</a>
+<a href="./DATASET.md">[Dataset]</a>
+<a href="https://youngsm.com/polarmae">[Project Site]</a>
+<a href="./tutorial">[Tutorial]</a>
+<a href="#citing-polar-mae">[BibTeX]</a>
+</div>
 
-[[`Paper`](https://arxiv.org/abs/2502.02558)][[`Dataset`](./DATASET.md)][[`Project`](https://youngsm.com/polarmae)][[`Tutorial Notebooks`](./tutorial)][[`BibTeX`](#citing-polar-mae)]
-
+\
 ![arch](images/arch.png)
 
 ## Installation

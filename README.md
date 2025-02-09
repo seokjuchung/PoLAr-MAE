@@ -1,8 +1,11 @@
-# PoLAr-MAE
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h1>PoLAr-MAE</h1>
+    <img src="images/latent_space.png" alt="Latent Space" style="max-height: 100px;" />
+</div>
 
 Particle Trajectory Representation Learning with Masked Point Modeling
 
-[[`Paper`](https://arxiv.org/abs/2502.02558)][[`Dataset`](./DATASET.md)][[`Project`](https://youngsm.com/polarmae)][[`BibTeX`](#citing-polar-mae)][[`Tutorial Notebooks`](./tutorial)]
+[[`Paper`](https://arxiv.org/abs/2502.02558)][[`Dataset`](./DATASET.md)][[`Project`](https://youngsm.com/polarmae)][[`Tutorial Notebooks`](./tutorial)][[`BibTeX`](#citing-polar-mae)]
 
 ![arch](images/arch.png)
 

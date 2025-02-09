@@ -128,9 +128,9 @@ class SSLModel(BaseModel):
             self.log(f"svm_train_acc_{dataset_name}", svm_train_acc, sync_dist=True)
             self.log(f"svm_val_acc_{dataset_name}", svm_val_acc, sync_dist=True)
             for label, score in train_class_scores.items():
-                self.log(f"svm_train_class_score_{dataset_name}_{label}", score, sync_dist=True)
+                self.log(f"svm_train_class_f1_{dataset_name}_{label}", score, sync_dist=True)
             for label, score in val_class_scores.items():
-                self.log(f"svm_val_class_score_{dataset_name}_{label}", score, sync_dist=True)
+                self.log(f"svm_val_class_f1_{dataset_name}_{label}", score, sync_dist=True)
 
     def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # This is a bit of a hack. We want to avoid saving the datasets in the svm_validation dict,

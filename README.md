@@ -2,16 +2,11 @@
 
 Particle Trajectory Representation Learning with Masked Point Modeling
 
-> [!NOTE]
-> Example jupyter notebooks are currently being prepared. Come back soon!
-
-[[`Paper`](https://arxiv.org/abs/2502.02558)][[`Dataset`](./DATASET.md)][[`Project`](https://youngsm.com/polarmae)][[`BibTeX`](#citing-polar-mae)]
+[[`Paper`](https://arxiv.org/abs/2502.02558)][[`Dataset`](./DATASET.md)][[`Project`](https://youngsm.com/polarmae)][[`BibTeX`](#citing-polar-mae)][[`Tutorial Notebooks`](./tutorial)]
 
 ![arch](images/arch.png)
 
 ## Installation
-
-## 1. Installation
 
 This codebase relies on a number of dependencies, some of which are difficult to get running. If you're using conda on Linux, use the following to create an environment and install the dependencies:
 
@@ -81,7 +76,7 @@ gdown --folder 1nec9WYPRqMn-_3m6TdM12TmpoInHDosb -O /path/to/save/dataset
 | Model | Num. Events |  Config | SVM $\text{m}F_1$ | Download |
 |-------|-------------|---------|-------|----------|
 | Point-MAE | 1M | [pointmae.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/pointmae.yml) | 0.886 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/mae_pretrain.ckpt) |
-| PoLAr-MAE | 1M | [pointmae_multitask.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/pointmae_multitask.yml) | 0.895 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_pretrain.ckpt) |
+| PoLAr-MAE | 1M | [polarmae.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/polarmae.yml) | 0.895 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_pretrain.ckpt) |
 
 Our evaluation consists of training an ensemble of linear SVMs to classify individual tokens (i.e., groups) as containing one or more classes. This is done via a One vs Rest strategy, where each SVM is trained to classify a single class against all others. $\text{m}F_1$ is the mean $F_1$ score over all semantic categories in the validation set of the PILArNet-M dataset.
 
@@ -90,13 +85,20 @@ Our evaluation consists of training an ensemble of linear SVMs to classify indiv
 | Model | Training Method | Num. Events |  Config | $\text{m}F_1$ | Download |
 |-------|-----------------|-------------|---------|-------|----------|
 | Point-MAE | Linear probing | 10k | [part_segmentation_mae_peft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_mae_peft.yml) | 0.772 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/mae_peft_segsem_10k.ckpt) |
-| PoLAr-MAE | Linear probing | 10k | [part_segmentation_multitask_peft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_multitask_peft.yml) | 0.798 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_peft_segsem_10k.ckpt) |
+| PoLAr-MAE | Linear probing | 10k | [part_segmentation_polarmae_peft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_polarmae_peft.yml) | 0.798 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_peft_segsem_10k.ckpt) |
 | Point-MAE | FFT | 10k | [part_segmentation_mae_fft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_mae_fft.yml) | 0.831 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/mae_fft_segsem_10k.ckpt) |
-| PoLAr-MAE | FFT | 10k | [part_segmentation_multitask_fft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_multitask_fft.yml) | 0.837 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_fft_segsem_10k.ckpt) |
+| PoLAr-MAE | FFT | 10k | [part_segmentation_polarmae_fft.yml](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_polarmae_fft.yml) | 0.837 | [here](https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_fft_segsem_10k.ckpt) |
 
 Our evaluation for semantic segmentation consists of 1:1 comparisons between the predicted and ground truth segmentations. $\text{m}F_1$ is the mean $F_1$ score over all semantic categories in the validation set of the PILArNet-M dataset.
 
 ## Training
+
+<details>
+  <summary>Important: Learning rate instructions</summary>
+
+  The following commands use the configurations we used for our experiments. Particularly, our learning rates are set assuming a batch size of 128 (i.e., 32 across 4 GPUs). If you want to train on a single GPU with the same batch size in the configuration file, you will need to scale the learning rate accordingly. We recommend scaling the learning rate by the square root of the ratio of the batch sizes. I.e., if your batch size is $b$, you should set the learning rate $l \rightarrow l \times \sqrt{b/128}$.
+</details>
+
 
 ### Pretraining
 
@@ -106,23 +108,37 @@ To pretrain Point-MAE, modify the [config file](https://github.com/DeepLearnPhys
 python -m polarmae.tasks.pointmae fit --config configs/pointmae.yml
 ```
 
-To pretrain PoLAr-MAE, modify the [config file](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/pointmae_multitask.yml) to include the path to the PILArNet-M dataset, and run the following command:
+To pretrain PoLAr-MAE, modify the [config file](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/polarmae.yml) to include the path to the PILArNet-M dataset, and run the following command:
 
 ```bash
-python -m polarmae.tasks.pointmae_multitask fit --config configs/pointmae_multitask.yml
+python -m polarmae.tasks.polarmae fit --config configs/polarmae.yml
 ```
 
+<details>
+  <summary>Example training plots</summary>
+
+  <img src="images/pretrain_loss.png" alt="training plots" width="300">
+  <img src="images/svm_f1_scores.png" alt="svm plots" width="300">
+</details>
 
 ### Semantic Segmentation
 
 To train a semantic segmentation model, modify the [config file](https://github.com/DeepLearnPhysics/PoLAr-MAE/blob/main/configs/part_segmentation_mae_peft.yml) to include the path to the PILArNet-M dataset, and run the following command:
 
 ```bash
-python -m polarmae.tasks.part_segmentation fit --config configs/part_segmentation_{mae,multitask}_{peft,fft}.yml \
+python -m polarmae.tasks.part_segmentation fit --config configs/part_segmentation_{mae,polarmae}_{peft,fft}.yml \
                         --model.pretrained_ckpt_path path/to/pretrained/checkpoint.ckpt
 ```
 
-where `{mae,multitask}` is either `mae` or `multitask`, and `{peft,fft}` is either `peft` or `fft`. You can either specify the pretrained checkpoint path in the config, or pass it as an argument to the command like above.
+where `{mae,polarmae}` is either `mae` or `polarmae`, and `{peft,fft}` is either `peft` or `fft`. You can either specify the pretrained checkpoint path in the config, or pass it as an argument to the command like above.
+
+<details>
+  <summary>Example training plots</summary>
+
+  <img src="images/ft_segsem_loss.png" alt="training plots" width="300">
+  <img src="images/ft_segsem_accprec.png" alt="svm plots" width="300">
+  <img src="images/ft_segsem_mious.png" alt="svm plots" width="300">
+</details>
 
 
 ## Acknowledgements
@@ -131,7 +147,7 @@ This repository is built upon the lovely [Point-MAE](https://github.com/Pang-Yat
 
 ## Citing PoLAr-MAE
 
-If you find this work useful, please cite the following paper:
+If you find this work useful, please consider citing the following paper:
 
 ```bibtex
 @misc{young2025particletrajectoryrepresentationlearning,

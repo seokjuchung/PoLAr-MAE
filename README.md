@@ -65,9 +65,40 @@ There are a couple of extra dependencies that are optional, but recommended:
 conda install wandb jupyter matplotlib
 ```
 
-## Tutorial Notebooks
+## Getting Started
+
+### Tutorial Notebooks
 
 Tutorial notebooks for understanding the dataset, model architecture, pretraining, and finetuning are available in the [`tutorial`](tutorial) directory.
+
+### Quickstart
+
+#### Pretrained models
+
+```python
+>>> !wget https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/mae_pretrain.ckpt
+>>> !wget https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/polarmae_pretrain.ckpt
+>>>
+>>> from polarmae.models.ssl import PointMAE, PoLArMAE
+>>> model = PointMAE.load_from_checkpoint("mae_pretrain.ckpt") # or
+>>> model = PoLArMAE.load_from_checkpoint("polarmae_pretrain.ckpt")
+```
+
+#### Fine-tuned models
+
+```python
+>>> !wget https://github.com/DeepLearnPhysics/PoLAr-MAE/releases/download/weights/{mae,polarmae}_{fft,peft}_segsem.ckpt
+>>>
+>>> from polarmae.models.finetune import SemanticSegmentation
+>>> from polarmae.utils.checkpoint import load_finetune_checkpoint
+>>>
+>>> model = load_finetune_checkpoint(SemanticSegmentation, 
+                                    "{mae,polarmae}_{fft,peft}_segsem.ckpt",
+                                    data_path="/path/to/pilarnet-m/dataset",
+                                    pretrained_ckpt_path="{mae,polarmae}_pretrain.ckpt")
+```
+
+Here `{mae,polarmae}` is either `mae` or `polarmae`, and `{fft,peft}` is either `fft` or `peft`.
 
 ## PILArNet-M Dataset
 

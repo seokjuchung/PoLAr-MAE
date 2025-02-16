@@ -197,3 +197,7 @@ If you find this work useful, please consider citing the following paper:
       url={https://arxiv.org/abs/2502.02558}, 
 }
 ```
+
+## Contact
+
+Any questions? Any suggestions? Want to collaborate? Feel free to raise an issue on Github or email Sam Young [youngsam@stanford.edu](mailto:youngsam@stanford.edu).

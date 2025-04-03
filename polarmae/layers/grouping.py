@@ -5,6 +5,9 @@ import torch.nn as nn
 from cnms import cnms
 from pytorch3d import _C
 from pytorch3d.ops import ball_query, knn_points
+from polarmae.utils.pylogger import RankedLogger
+
+log = RankedLogger(__name__, rank_zero_only=True)
 
 
 @torch.no_grad()
@@ -115,10 +118,11 @@ def sample_farthest_points(
         K: samples required in each sampled point cloud (this is typically << P). If
             K is an int then the same number of samples are selected for each
             pointcloud in the batch. If K is a tensor is should be length (N,)
-            giving the number of samples to select for each element in the batch
+            giving the number of samples to select for each element in the batch.
+            If K is a float, then it will be interpreted as a ratio of the total
+            number of points in the pointcloud, and K will be set to ceil(lengths / K).
         random_start_point: bool, if True, a random point is selected as the starting
             point for iterative sampling.
-
     Returns:
         selected_points: (N, K, D), array of selected values from points. If the input
             K is a tensor, then the shape will be (N, max(K), D), and padded with
@@ -146,6 +150,9 @@ def sample_farthest_points(
         K = torch.full((N,), K, dtype=torch.int64, device=device)
     elif isinstance(K, list):
         K = torch.tensor(K, dtype=torch.int64, device=device)
+    elif isinstance(K, float):
+        K = torch.ceil(lengths / K).to(torch.int64)
+
 
     if K.shape[0] != N:
         raise ValueError("K and points must have the same batch dimension")
@@ -273,7 +280,8 @@ class PointcloudGrouping(nn.Module):
       for vanilla FPS+{kNN, ball query}.
 
     Args:
-        num_groups (int): Number of groups (clusters) to form.
+        num_groups (int | float): Number of groups (clusters) to form. If a float, then it will be interpreted as a ratio of the total
+            number of points in the pointcloud, and num_groups will be set to ceil(lengths / K).
         group_max_points (int): Maximum number of points allowed in each group.
         group_radius (Optional[float]): Radius used to determine the neighborhood for grouping.
         group_upscale_points (Optional[int]): Upscaling parameter used for kNN/ball query to get most of the points/group,
@@ -290,7 +298,7 @@ class PointcloudGrouping(nn.Module):
     """
     def __init__(
         self,
-        num_groups: int,
+        num_groups: int | float,
         group_max_points: int,
         group_radius: Optional[float] = None,
         group_upscale_points: Optional[int] = None,
@@ -300,6 +308,7 @@ class PointcloudGrouping(nn.Module):
         use_relative_features: bool = False,
         normalize_group_centers: bool = False,
         rescale_by_group_radius: bool = True,
+        use_fps_seed: bool = True,
     ):
         super().__init__()
 
@@ -313,6 +322,9 @@ class PointcloudGrouping(nn.Module):
         self.use_relative_features = use_relative_features
         self.normalize_group_centers = normalize_group_centers
         self.rescale_by_group_radius = rescale_by_group_radius
+        self.use_fps_seed = self.overlap_factor is None
+        if not self.use_fps_seed:
+            log.info(f"Using CNMS for grouping. Using `num_groups` as the K in the ball query ({self.num_groups})! Make sure it's not too large!")
 
 
     @torch.no_grad()
@@ -327,24 +339,33 @@ class PointcloudGrouping(nn.Module):
         # lengths: (B,)
 
         # sample farthest points (either seed points or legit the centers)
-        possible_centers, idx = sample_farthest_points(
-            points[...,:3].float(),
-            K=self.num_groups,
-            lengths=lengths,
-            random_start_point=True,
-        )  # (B, G, 3)
+        if self.use_fps_seed:
+            possible_centers, idx = sample_farthest_points(
+                points[...,:3].float(),
+                K=self.num_groups,
+                lengths=lengths,
+                random_start_point=True,
+            )  # (B, G, 3)
+            possible_lengths = idx.ne(-1).sum(-1)
+        else: # using cnms
+            possible_centers = points[...,:3].float()
+            possible_lengths = lengths
 
         # if we have an overlap factor, run cnms to get the final group centers
         if self.overlap_factor is not None:
             # run cnms
-            group_centers, lengths1 = cnms(
+            group_centers, lengths1, grouping_idx = cnms(
                 possible_centers,
                 overlap_factor=self.overlap_factor,
                 radius=self.group_radius,
-                K=self.num_groups,
-                lengths=idx.ne(-1).sum(-1),
+                K=self.num_groups,          # 64 or 128 is good! don't let it be too large.
+                lengths=possible_lengths,
             )  # (B, G, 3), (B,)
             group_centers = group_centers[:,:self.context_length]
+            if (lengths1 > self.context_length).any():
+                log.warning(
+                    f"Some events had more groups than the context length allows ({lengths1} > {self.context_length})! This should not happen!"
+                )
             lengths1 = lengths1.clamp_max(self.context_length)
         else:
             # if no overlap factor, just use the seed points as the group centers

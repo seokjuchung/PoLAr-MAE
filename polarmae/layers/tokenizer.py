@@ -32,6 +32,7 @@ class PointcloudTokenizer(nn.Module):
         reduction_method: str = 'energy',
         use_relative_features: bool = False,
         normalize_group_centers: bool = False,
+        use_fps_seed: bool = True,
     ) -> None:
         super().__init__()
         self.token_dim = token_dim
@@ -45,6 +46,7 @@ class PointcloudTokenizer(nn.Module):
             reduction_method=reduction_method,
             use_relative_features=use_relative_features,
             normalize_group_centers=normalize_group_centers,
+            use_fps_seed=use_fps_seed,
         )
 
         self.embedding = MaskedMiniPointNet(num_channels, token_dim)
@@ -65,9 +67,10 @@ class PointcloudTokenizer(nn.Module):
         lengths: torch.Tensor
         semantic_id_groups: torch.Tensor | None
 
+
         grouping_out = self.grouping(
             points, lengths, semantic_id, endpoints)
-        
+
         groups = grouping_out['groups']
         point_mask = grouping_out['point_mask']
         group_center = grouping_out['group_centers']
@@ -75,9 +78,9 @@ class PointcloudTokenizer(nn.Module):
         semantic_id_groups = grouping_out['semantic_id_groups']
         endpoints_groups = grouping_out['endpoints_groups']
         idx = grouping_out['idx']
-        
-        # just embed nonzero groups
-        out = self.embedding(groups[embedding_mask], point_mask[embedding_mask].unsqueeze(1))
+
+        with torch.autocast(device_type=groups.device.type, dtype=torch.float32):
+            out = self.embedding(groups[embedding_mask], point_mask[embedding_mask].unsqueeze(1))
         tokens = torch.zeros(
             groups.shape[0],groups.shape[1],
             self.token_dim,
@@ -139,6 +142,7 @@ def _2p5voxel_tokenizer(num_channels=4, embed_dim=384, **kwargs) -> PointcloudTo
         group_upscale_points=64,
         overlap_factor=0.73,
         reduction_method='fps',
+        use_fps_seed=True,
     )
     config.update(kwargs)
     return PointcloudTokenizer(
@@ -159,6 +163,7 @@ def _5voxel_tokenizer(num_channels=4,embed_dim=384,**kwargs) -> PointcloudTokeni
         group_upscale_points=256,
         overlap_factor=0.72,
         reduction_method='fps',
+        use_fps_seed=True,
     )
     config.update(kwargs)
     return PointcloudTokenizer(
@@ -179,6 +184,7 @@ def _25voxel_tokenizer(num_channels=4,embed_dim=384,**kwargs) -> PointcloudToken
         group_upscale_points=2048,
         overlap_factor=0.72,
         reduction_method='fps',
+        use_fps_seed=True,
         use_relative_features=False,
         normalize_group_centers=True,
     )

@@ -59,6 +59,7 @@ class SSLModel(BaseModel):
 
             for i, batch in enumerate(dataloader):
                 data = batch['points'].cuda()
+                data = self.val_transformations(data)
                 lengths = batch['lengths'].cuda()
                 labels_batch = batch['semantic_id'].cuda()
                 with torch.no_grad():
@@ -111,8 +112,8 @@ class SSLModel(BaseModel):
         svm.fit(x_train, y_train)  # type: ignore
         train_acc: float = svm.score(x_train, y_train)  # type: ignore
         val_acc: float = svm.score(x_val, y_val)  # type: ignore
-        train_report = classification_report(y_train, svm.predict(x_train), output_dict=True)
-        val_report = classification_report(y_val, svm.predict(x_val), output_dict=True)
+        train_report = classification_report(y_train, svm.predict(x_train), output_dict=True, zero_division=torch.nan)
+        val_report = classification_report(y_val, svm.predict(x_val), output_dict=True, zero_division=torch.nan)
 
         train_class_scores = {datamodule.seg_class_to_category[int(label)]: metrics['f1-score'] for label, metrics in train_report.items() if label.isdigit()}
         val_class_scores = {datamodule.seg_class_to_category[int(label)]: metrics['f1-score'] for label, metrics in val_report.items() if label.isdigit()}

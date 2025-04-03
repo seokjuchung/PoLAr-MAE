@@ -260,35 +260,34 @@ class MaskedBatchNorm1d(nn.Module):
         # Avoid division by zero
         valid_elements = valid_elements.clamp(min=1)
 
-        # Compute the mean over valid elements
-        # Sum over batch and length dimensions
-        sum_x = (x * mask).sum(dim=(0, 2))  # Shape: (C,)
-        mean = sum_x / valid_elements  # Shape: (C,)
-
-        # Center the inputs
-        x = x - mean.view(1, C, 1)
-
-        # Compute the variance over valid elements
-        var = ((x * mask) ** 2).sum(dim=(0, 2)) / valid_elements  # Shape: (C,)
-
-        # Update running statistics
         if self.training:
+            # Compute the mean over valid elements
+            # Sum over batch and length dimensions
+            sum_x = (x * mask).sum(dim=(0, 2))  # Shape: (C,)
+            mean = sum_x / valid_elements  # Shape: (C,)
+
+            # Center the inputs
+            x_centered = x - mean.view(1, C, 1)
+
+            # Compute the variance over valid elements
+            var = ((x_centered * mask) ** 2).sum(dim=(0, 2)) / valid_elements  # Shape: (C,)
+
+            # Update running statistics
             with torch.no_grad():
                 momentum = self.momentum
                 self.running_mean = (1 - momentum) * self.running_mean + momentum * mean
                 self.running_var = (1 - momentum) * self.running_var + momentum * var
         else:
-            x = x + mean.view(1, C, 1)
             # Use running stats during evaluation
             mean = self.running_mean
             var = self.running_var
-
-            # Recompute x_centered with updated mean
-            x = x - mean.view(1, C, 1)
+            
+            # Center using running mean
+            x_centered = x - mean.view(1, C, 1)
 
         # Normalize
         x = (
-            x / torch.sqrt(var + self.eps).view(1, C, 1)
+            x_centered / torch.sqrt(var + self.eps).view(1, C, 1)
         ) * mask  # Multiply by mask to zero out padded positions
 
         # Apply affine transformation if enabled

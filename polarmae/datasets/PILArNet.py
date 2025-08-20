@@ -22,8 +22,8 @@ class PILArNet(Dataset):
         remove_low_energy_scatters: bool = False,
         maxlen: int = -1,
         min_points: int = 1024,
-        return_semantic_id: bool = True,
-        return_cluster_id: bool = True,
+        return_semantic_id: bool = False,
+        return_cluster_id: bool = False,
         return_endpoints: bool = False # not used currently
     ):
         self.data_path = data_path
@@ -98,17 +98,21 @@ class PILArNet(Dataset):
         idx = self.indices[h5_idx][idx]
 
         # load the point cloud
-        data = h5_file["point"][idx].reshape(-1, 8)[:, [0,1,2,3,5]] # (x,y,z,e,t)
-        cluster_size, semantic_id = h5_file["cluster"][idx].reshape(-1, 5)[:, [0, -1]].T
+        # data = h5_file["point"][idx].reshape(-1, 8)[:, [0,1,2,3,5]] # (x,y,z,e,t)
+        # cluster_size, semantic_id = h5_file["cluster"][idx].reshape(-1, 5)[:, [0, -1]].T
 
+        # Modified to match inss data
+        data = h5_file["data"][idx].reshape(-1, 4)[:, [0,1,2,3]] # (x,y,z,e)
+        # cluster_size, semantic_id = None, None
+        
         # remove low energy scatters (always first particle)
         if self.remove_low_energy_scatters:
             data = data[cluster_size[0] :]
             semantic_id, cluster_size = semantic_id[1:], cluster_size[1:]
 
         # compute semantic and instance (cluster) ids for each point
-        data_semantic_id = np.repeat(semantic_id, cluster_size)
-        cluster_id = np.repeat(np.arange(len(cluster_size)), cluster_size)
+        # data_semantic_id = np.repeat(semantic_id, cluster_size)
+        # cluster_id = np.repeat(np.arange(len(cluster_size)), cluster_size)
 
 
         # log transform energy to [-1,1]
@@ -117,12 +121,12 @@ class PILArNet(Dataset):
         # remove points below specified energy threshold
         if threshold_mask is not None:
             data = data[threshold_mask]
-            data_semantic_id = data_semantic_id[threshold_mask]
-            cluster_id = cluster_id[threshold_mask]
+            # data_semantic_id = data_semantic_id[threshold_mask]
+            # cluster_id = cluster_id[threshold_mask]
 
         data = torch.from_numpy(data[:,:4]).float()
-        data_semantic_id = torch.from_numpy(data_semantic_id).unsqueeze(1).long()
-        cluster_id = torch.from_numpy(cluster_id).unsqueeze(1).long()
+        # data_semantic_id = torch.from_numpy(data_semantic_id).unsqueeze(1).long()
+        # cluster_id = torch.from_numpy(cluster_id).unsqueeze(1).long()
 
         output = dict(
             points=data,

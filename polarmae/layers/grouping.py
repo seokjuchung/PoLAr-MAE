@@ -174,7 +174,7 @@ def sample_farthest_points(
 
     with torch.no_grad():
         # pyre-fixme[16]: `pytorch3d_._C` has no attribute `sample_farthest_points`.
-        idx = _C.sample_farthest_points(points[:, :, :3], lengths, K, start_idxs)
+        idx = _C.sample_farthest_points(points[:, :, :3], lengths, K, start_idxs, 0)
     sampled_points = masked_gather(points, idx)
     return sampled_points, idx
 
